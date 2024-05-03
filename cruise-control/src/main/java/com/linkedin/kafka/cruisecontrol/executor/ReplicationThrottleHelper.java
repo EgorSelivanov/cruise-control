@@ -180,6 +180,7 @@ class ReplicationThrottleHelper {
         .computeIfAbsent(topic, x -> new TreeSet<>());
       brokers.forEach(brokerId -> throttledReplicas.add(partitionId + ":" + brokerId));
     }
+    LOG.debug("ThrottledReplicasByTopic map: {}", throttledReplicasByTopic);
     return throttledReplicasByTopic;
   }
 
@@ -304,6 +305,7 @@ class ReplicationThrottleHelper {
     List<AlterConfigOp> ops = new ArrayList<>();
 
     ConfigEntry currentLeaderThrottledReplicas = topicConfigs.get(LEADER_THROTTLED_REPLICAS);
+    LOG.debug("currentLeaderThrottledReplicas empty: {}", currentLeaderThrottledReplicas != null);
     if (currentLeaderThrottledReplicas != null) {
       if (currentLeaderThrottledReplicas.value().equals(WILDCARD_ASTERISK)) {
         LOG.debug("Existing config throttles all leader replicas. So, do not remove any leader replica throttle");
@@ -359,6 +361,7 @@ class ReplicationThrottleHelper {
       }
     }
     if (!ops.isEmpty()) {
+      LOG.debug("Change broker config: {}", brokerId);
       changeBrokerConfigs(brokerId, ops);
     }
   }
@@ -368,6 +371,7 @@ class ReplicationThrottleHelper {
     // Use HashMap::new instead of Collectors.toMap to allow inserting null values
     Map<String, String> expectedConfigs = ops.stream()
             .collect(HashMap::new, (m, o) -> m.put(o.configEntry().name(), o.configEntry().value()), HashMap::putAll);
+    LOG.debug("Waiting for config apply: {}", cf.name());
     boolean retryResponse = CruiseControlMetricsUtils.retry(() -> {
       try {
         return !configsEqual(getEntityConfigs(cf), expectedConfigs);
@@ -375,6 +379,7 @@ class ReplicationThrottleHelper {
         return false;
       }
     }, _retries);
+    LOG.debug("RetryResponse: {}", retryResponse);
     if (!retryResponse) {
       throw new IllegalStateException("The following configs " + ops + " were not applied to " + cf + " within the time limit");
     }
@@ -383,6 +388,7 @@ class ReplicationThrottleHelper {
   static boolean configsEqual(Config configs, Map<String, String> expectedValues) {
     for (Map.Entry<String, String> entry : expectedValues.entrySet()) {
       ConfigEntry configEntry = configs.get(entry.getKey());
+      LOG.debug("Got configEntry: {}", configEntry);
       if (configEntry == null || configEntry.value() == null || configEntry.value().isEmpty()) {
         if (entry.getValue() != null) {
           return false;
