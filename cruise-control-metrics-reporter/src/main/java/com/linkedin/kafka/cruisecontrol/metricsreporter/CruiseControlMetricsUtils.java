@@ -20,10 +20,14 @@ import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Properties;
 import java.util.function.Supplier;
 
 public final class CruiseControlMetricsUtils {
+  private static final Logger LOG = LoggerFactory.getLogger(CruiseControlMetricsUtils.class);
 
   public static final long ADMIN_CLIENT_CLOSE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
   public static final long CLIENT_REQUEST_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(10);
@@ -172,7 +176,9 @@ public final class CruiseControlMetricsUtils {
       long timeToSleep = scaleMs;
       boolean retry;
       do {
+        LOG.debug("Starting retry; attempts: {}", attempts);
         retry = function.get();
+        LOG.debug("Retry value: {}; TimeToSleep: {}", retry, timeToSleep);
         if (retry) {
           try {
             if (++attempts == maxAttempts) {
@@ -180,8 +186,8 @@ public final class CruiseControlMetricsUtils {
             }
             timeToSleep *= base;
             Thread.sleep(timeToSleep);
-          } catch (InterruptedException ignored) {
-
+          } catch (InterruptedException e) {
+            LOG.debug("Ignored retry error: {}", e.getMessage());
           }
         }
       } while (retry);

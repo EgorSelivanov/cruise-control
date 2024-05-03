@@ -361,7 +361,8 @@ class ReplicationThrottleHelper {
       }
     }
     if (!ops.isEmpty()) {
-      LOG.debug("Change broker config: {}", brokerId);
+      LOG.debug("Change broker config: {}; ops size: {}", brokerId, ops.size());
+      LOG.debug("Ops list: {}", ops);
       changeBrokerConfigs(brokerId, ops);
     }
   }
@@ -376,6 +377,7 @@ class ReplicationThrottleHelper {
       try {
         return !configsEqual(getEntityConfigs(cf), expectedConfigs);
       } catch (ExecutionException | InterruptedException | TimeoutException e) {
+        LOG.debug("Error while retryResponse: {}", e.getMessage());
         return false;
       }
     }, _retries);
@@ -396,9 +398,11 @@ class ReplicationThrottleHelper {
       } else if (configEntry.source().equals(ConfigEntry.ConfigSource.STATIC_BROKER_CONFIG) && entry.getValue() == null) {
         LOG.debug("Found static broker config: {}, skipping comparison", configEntry);
       } else if (!Objects.equals(entry.getValue(), configEntry.value())) {
+        LOG.debug("ConfigEntry value: {}; expected: {}", configEntry.value(), entry.getValue());
         return false;
       }
     }
+    LOG.debug("Configs Equal!");
     return true;
   }
 
