@@ -1613,7 +1613,6 @@ public class Executor {
       // Exhaust all the pending partition movements.
       while ((partitionsToMove > 0 || !inExecutionTasks().isEmpty()) && _stopSignal.get() == NO_STOP_EXECUTION) {
         // Get tasks to execute.
-        LOG.debug("Get tasks to execute");
         List<ExecutionTask> tasksToExecute = _executionTaskManager.getInterBrokerReplicaMovementTasks();
         LOG.info("Executor will execute {} task(s)", tasksToExecute.size());
 
@@ -1642,8 +1641,6 @@ public class Executor {
         inProgressTasks.addAll(inExecutionTasks());
 
         throttleHelper.clearThrottles(completedTasks, inProgressTasks);
-        LOG.debug("partitionsToMove count: {}", partitionsToMove);
-        LOG.debug("In execution tasks: {}", inExecutionTasks());
       }
 
       // Currently, _executionProgressCheckIntervalMs is only runtime adjusted for inter broker move tasks, not
